@@ -1,0 +1,256 @@
+package com.example.movieknowledge.viewmodel
+
+import android.app.Application
+import android.util.Log
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.movieknowledge.data.local.entities.Movie
+import com.example.movieknowledge.data.remote.models.MovieResponse
+import com.example.movieknowledge.data.remote.models.SearchResult
+import com.example.movieknowledge.data.repository.MovieRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
+
+/**
+ * ViewModel that handles movie related data and operations
+ */
+class MovieViewModel(application: Application) : AndroidViewModel(application) {
+    private val TAG = "MovieViewModel"
+    private val repository = MovieRepository(application)
+
+    // StateFlow for UI states
+    private val _currentMovie = MutableStateFlow<MovieResponse?>(null)
+    val currentMovie = _currentMovie.asStateFlow()
+
+    private val _actorSearchResults = MutableStateFlow<List<Movie>>(emptyList())
+    val actorSearchResults = _actorSearchResults.asStateFlow()
+
+    private val _titleSearchResults = MutableStateFlow<List<SearchResult>>(emptyList())
+    val titleSearchResults = _titleSearchResults.asStateFlow()
+
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
+    private val _message = MutableStateFlow<String?>(null)
+    val message = _message.asStateFlow()
+
+    /**
+     * Check if database needs to be initialized and do so if needed
+     */
+    fun checkAndInitDatabase() {
+        viewModelScope.launch {
+            try {
+                val count = repository.getMoviesCount()
+                Log.d(TAG, "Current database movie count: $count")
+                if (count == 0) {
+                    _message.value = "Initializing database with sample movies..."
+                    repository.addMoviesToDb()
+                    _message.value = "Database initialized with sample movies"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking database: ${e.message}")
+                _message.value = "Error checking database: ${e.message}"
+            }
+        }
+    }
+
+    /**
+     * Add predefined movies to database
+     */
+    fun addMoviesToDb() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val count = repository.getMoviesCount()
+                if (count > 0) {
+                    _message.value = "Movies already in database (${count} movies)"
+                } else {
+                    repository.addMoviesToDb()
+                    _message.value = "Movies added to database successfully"
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error adding movies: ${e.message}")
+                _message.value = "Error adding movies: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Get movie by title from API
+     */
+    fun getMovieByTitle(title: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val result = repository.getMovieByTitle(title)
+                result.fold(
+                    onSuccess = {
+                        _currentMovie.value = it
+                        Log.d(TAG, "Successfully retrieved movie: ${it.title}")
+                    },
+                    onFailure = {
+                        _message.value = "Error: ${it.message}"
+                        Log.e(TAG, "Error retrieving movie: ${it.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                _message.value = "Error retrieving movie: ${e.message}"
+                Log.e(TAG, "Exception in getMovieByTitle: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Save current movie to database
+     */
+    fun saveCurrentMovieToDb() {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                currentMovie.value?.let {
+                    repository.saveMovieToDb(it)
+                    _message.value = "Movie saved to database successfully"
+                    Log.d(TAG, "Successfully saved movie to database: ${it.title}")
+                } ?: run {
+                    _message.value = "No movie to save"
+                    Log.w(TAG, "Attempted to save movie but no movie is currently loaded")
+                }
+            } catch (e: Exception) {
+                _message.value = "Error saving movie: ${e.message}"
+                Log.e(TAG, "Error saving movie: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Search movies by actor
+     * Collects the Flow from repository and updates the UI state accordingly
+     */
+    fun searchMoviesByActor(actorName: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _message.value = null // Clear previous messages
+            try {
+                Log.d(TAG, "Searching for actor: $actorName")
+
+                // Check if database is initialized first
+                val count = repository.getMoviesCount()
+                if (count == 0) {
+                    _message.value = "Initializing database with sample movies..."
+                    repository.addMoviesToDb()
+                    Log.d(TAG, "Database initialized with movies")
+                }
+
+                // Now perform the search using first() to get a single emission
+                repository.searchMoviesByActor(actorName)
+                    .catch { e ->
+                        _message.value = "Error searching movies: ${e.message}"
+                        Log.e(TAG, "Error searching for actor: ${e.message}")
+                        _isLoading.value = false
+                    }
+                    .collect { movies ->
+                        _actorSearchResults.value = movies
+                        Log.d(TAG, "Found ${movies.size} movies with actor: $actorName")
+
+                        if (movies.isEmpty()) {
+                            _message.value = "No movies found with actor: $actorName"
+                        } else {
+                            _message.value = null // Clear error message if movies found
+                        }
+                        _isLoading.value = false
+                    }
+            } catch (e: Exception) {
+                _message.value = "Error searching movies: ${e.message}"
+                Log.e(TAG, "Exception in searchMoviesByActor: ${e.message}")
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Search movies by title from API
+     */
+    fun searchMoviesByTitle(title: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val result = repository.searchMoviesByTitle(title)
+                result.fold(
+                    onSuccess = { results ->
+                        _titleSearchResults.value = results
+                        if (results.isEmpty()) {
+                            _message.value = "No movies found with title: $title"
+                        }
+                        Log.d(TAG, "Found ${results.size} movies matching title: $title")
+                    },
+                    onFailure = {
+                        _message.value = "Error: ${it.message}"
+                        Log.e(TAG, "Error searching movies by title: ${it.message}")
+                    }
+                )
+            } catch (e: Exception) {
+                _message.value = "Error searching movies: ${e.message}"
+                Log.e(TAG, "Exception in searchMoviesByTitle: ${e.message}")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Get details for a specific movie by IMDb ID
+     */
+    fun getMovieDetails(imdbId: String) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val result = repository.getMovieDetails(imdbId)
+                result.fold(
+                    onSuccess = { _currentMovie.value = it },
+                    onFailure = { _message.value = "Error: ${it.message}" }
+                )
+            } catch (e: Exception) {
+                _message.value = "Error retrieving movie details: ${e.message}"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Clear current movie
+     */
+    fun clearCurrentMovie() {
+        _currentMovie.value = null
+    }
+
+    /**
+     * Clear message
+     */
+    fun clearMessage() {
+        _message.value = null
+    }
+
+    /**
+     * Clear search results for actors
+     */
+    fun clearActorSearchResults() {
+        _actorSearchResults.value = emptyList()
+    }
+
+    /**
+     * Clear search results for titles
+     */
+    fun clearTitleSearchResults() {
+        _titleSearchResults.value = emptyList()
+    }
+}
