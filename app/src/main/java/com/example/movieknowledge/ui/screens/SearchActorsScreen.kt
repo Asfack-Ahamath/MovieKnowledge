@@ -46,6 +46,7 @@ fun SearchActorsScreen(
     LaunchedEffect(Unit) {
         viewModel.checkAndInitDatabase()
         viewModel.clearActorSearchResults()
+        viewModel.getAllMoviesFromDb() // Show current database state
     }
 
     Scaffold(
@@ -88,6 +89,7 @@ fun SearchActorsScreen(
                 value = searchText,
                 onValueChange = { searchText = it },
                 label = { Text("Actor Name") },
+                placeholder = { Text("e.g., Leonardo DiCaprio, Morgan Freeman...") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 trailingIcon = {
@@ -133,30 +135,76 @@ fun SearchActorsScreen(
             }
 
             // Error or info message
-            message?.let {
-                Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    textAlign = TextAlign.Center,
+            message?.let { msg ->
+                val isError = msg.contains("Error", ignoreCase = true) || 
+                             msg.contains("No movies found", ignoreCase = true)
+                val isInfo = msg.contains("Database contains", ignoreCase = true) ||
+                            msg.contains("Initializing", ignoreCase = true)
+                
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                )
-                LaunchedEffect(it) {
-                    // Clear message after 3 seconds
-                    kotlinx.coroutines.delay(3000L)
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = when {
+                            isError -> MaterialTheme.colorScheme.errorContainer
+                            isInfo -> MaterialTheme.colorScheme.primaryContainer
+                            else -> MaterialTheme.colorScheme.surfaceVariant
+                        }
+                    )
+                ) {
+                    Text(
+                        text = msg,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = when {
+                            isError -> MaterialTheme.colorScheme.onErrorContainer
+                            isInfo -> MaterialTheme.colorScheme.onPrimaryContainer
+                            else -> MaterialTheme.colorScheme.onSurfaceVariant
+                        },
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    )
+                }
+                
+                LaunchedEffect(msg) {
+                    // Clear message after different durations based on type
+                    val delay = when {
+                        isInfo -> 4000L // Show database info longer
+                        isError -> 3000L
+                        else -> 3000L
+                    }
+                    kotlinx.coroutines.delay(delay)
                     viewModel.clearMessage()
                 }
             }
 
             // Results section
             if (searchResults.isNotEmpty()) {
-                Text(
-                    text = "Found ${searchResults.size} movies",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer
+                    )
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Found ${searchResults.size} movies with this actor",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer
+                        )
+                        Text(
+                            text = "Searching through all movies in your database",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        )
+                    }
+                }
 
                 // LazyColumn for results with scroll state
                 LazyColumn(
@@ -171,18 +219,44 @@ fun SearchActorsScreen(
                     }
                 }
             } else if (!isLoading && message == null) {
-                // Empty state
+                // Empty state with helpful instructions
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(
-                        text = "Search for movies by actor name",
-                        style = MaterialTheme.typography.bodyLarge,
-                        textAlign = TextAlign.Center
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Search for Movies by Actor",
+                            style = MaterialTheme.typography.headlineSmall,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "Search through all movies in your database\nincluding saved movies from API searches",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Try searching for:",
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "• Leonardo DiCaprio\n• Morgan Freeman\n• Keanu Reeves\n• Or any actor from saved movies",
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

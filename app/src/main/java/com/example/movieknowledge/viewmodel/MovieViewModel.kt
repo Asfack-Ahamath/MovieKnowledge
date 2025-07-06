@@ -32,9 +32,6 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     private val _titleSearchResults = MutableStateFlow<List<SearchResult>>(emptyList())
     val titleSearchResults = _titleSearchResults.asStateFlow()
 
-    private val _savedMovies = MutableStateFlow<List<Movie>>(emptyList())
-    val savedMovies = _savedMovies.asStateFlow()
-
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -64,27 +61,20 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     /**
      * Add predefined movies to database
      */
-    fun addMoviesToDb(onComplete: (Boolean) -> Unit = {}) {
+    fun addMoviesToDb() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
                 val count = repository.getMoviesCount()
                 if (count > 0) {
                     _message.value = "Movies already in database (${count} movies)"
-                    // Load existing movies to show them
-                    loadSavedMovies()
-                    onComplete(true)
                 } else {
                     repository.addMoviesToDb()
                     _message.value = "Movies added to database successfully"
-                    // Load the newly added movies
-                    loadSavedMovies()
-                    onComplete(true)
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error adding movies: ${e.message}")
                 _message.value = "Error adding movies: ${e.message}"
-                onComplete(false)
             } finally {
                 _isLoading.value = false
             }
@@ -172,7 +162,7 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                 Log.d(TAG, "Found ${movies.size} movies with actor: $actorName")
 
                 if (movies.isEmpty()) {
-                    _message.value = "No movies found with actor: $actorName"
+                    _message.value = "No movies found with actor: $actorName (searched all movies in database)"
                 } else {
                     _message.value = null // Clear error message if movies found
                 }
@@ -270,46 +260,12 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             try {
                 val count = repository.getMoviesCount()
-                _message.value = "Database contains $count movies"
+                _message.value = "Database contains $count movies (includes saved movies from searches)"
                 Log.d(TAG, "Database verification: $count movies found")
             } catch (e: Exception) {
                 _message.value = "Error checking database: ${e.message}"
                 Log.e(TAG, "Error checking database: ${e.message}")
             }
         }
-    }
-
-    /**
-     * Load all saved movies from database
-     */
-    fun loadSavedMovies() {
-        viewModelScope.launch {
-            _isLoading.value = true
-            _message.value = null
-            try {
-                Log.d(TAG, "Loading saved movies from database")
-                val movies = repository.getAllMovies().first()
-                _savedMovies.value = movies
-                Log.d(TAG, "Loaded ${movies.size} movies from database")
-                
-                if (movies.isEmpty()) {
-                    _message.value = "No movies found in database"
-                } else {
-                    _message.value = "Loaded ${movies.size} movies from database"
-                }
-            } catch (e: Exception) {
-                _message.value = "Error loading movies: ${e.message}"
-                Log.e(TAG, "Error loading saved movies: ${e.message}")
-            } finally {
-                _isLoading.value = false
-            }
-        }
-    }
-
-    /**
-     * Clear saved movies list
-     */
-    fun clearSavedMovies() {
-        _savedMovies.value = emptyList()
     }
 }
