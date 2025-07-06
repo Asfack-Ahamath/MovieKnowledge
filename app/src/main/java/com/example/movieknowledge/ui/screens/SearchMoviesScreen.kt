@@ -93,15 +93,40 @@ fun SearchMoviesScreen(
             }
         }
 
-        message?.let {
-            Text(
-                text = it,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error
-            )
-            LaunchedEffect(it) {
-                // Clear message after 3 seconds
-                kotlinx.coroutines.delay(3000L)
+        message?.let { msg ->
+            val isError = msg.contains("Error", ignoreCase = true) || 
+                         msg.contains("Invalid", ignoreCase = true) ||
+                         msg.contains("No movie to save", ignoreCase = true)
+            val isSuccess = msg.contains("saved", ignoreCase = true) || 
+                           msg.contains("successfully", ignoreCase = true)
+            
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = when {
+                        isSuccess -> MaterialTheme.colorScheme.primaryContainer
+                        isError -> MaterialTheme.colorScheme.errorContainer
+                        else -> MaterialTheme.colorScheme.surfaceVariant
+                    }
+                )
+            ) {
+                Text(
+                    text = msg,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = when {
+                        isSuccess -> MaterialTheme.colorScheme.onPrimaryContainer
+                        isError -> MaterialTheme.colorScheme.onErrorContainer
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+            
+            LaunchedEffect(msg) {
+                // Clear message after 5 seconds for success, 3 seconds for others
+                kotlinx.coroutines.delay(if (isSuccess) 5000L else 3000L)
                 viewModel.clearMessage()
             }
         }

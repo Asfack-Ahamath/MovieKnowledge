@@ -21,7 +21,9 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "movie_database"
-                ).build()
+                )
+                .fallbackToDestructiveMigration() // Handle schema changes
+                .build()
                 INSTANCE = instance
                 instance
             }

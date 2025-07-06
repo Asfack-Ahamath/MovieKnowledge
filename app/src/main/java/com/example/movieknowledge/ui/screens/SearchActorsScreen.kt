@@ -42,9 +42,10 @@ fun SearchActorsScreen(
         }
     }
 
-    // Check if we've already initialized the database
+    // Check if we've already initialized the database and clear previous results
     LaunchedEffect(Unit) {
         viewModel.checkAndInitDatabase()
+        viewModel.clearActorSearchResults()
     }
 
     Scaffold(

@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -113,18 +114,23 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     fun saveCurrentMovieToDb() {
         viewModelScope.launch {
             _isLoading.value = true
+            _message.value = null // Clear previous messages
             try {
-                currentMovie.value?.let {
-                    repository.saveMovieToDb(it)
-                    _message.value = "Movie saved to database successfully"
-                    Log.d(TAG, "Successfully saved movie to database: ${it.title}")
+                currentMovie.value?.let { movie ->
+                    Log.d(TAG, "Attempting to save movie: ${movie.title} (IMDb: ${movie.imdbID})")
+                    repository.saveMovieToDb(movie)
+                    _message.value = "Movie '${movie.title}' saved to database successfully!"
+                    Log.d(TAG, "Successfully saved movie to database: ${movie.title}")
                 } ?: run {
-                    _message.value = "No movie to save"
+                    _message.value = "No movie to save. Please search for a movie first."
                     Log.w(TAG, "Attempted to save movie but no movie is currently loaded")
                 }
+            } catch (e: IllegalArgumentException) {
+                _message.value = "Invalid movie data: ${e.message}"
+                Log.e(TAG, "Invalid movie data: ${e.message}")
             } catch (e: Exception) {
-                _message.value = "Error saving movie: ${e.message}"
-                Log.e(TAG, "Error saving movie: ${e.message}")
+                _message.value = "Error saving movie: ${e.message ?: "Unknown error occurred"}"
+                Log.e(TAG, "Error saving movie: ${e.message}", e)
             } finally {
                 _isLoading.value = false
             }
@@ -133,7 +139,7 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
 
     /**
      * Search movies by actor
-     * Collects the Flow from repository and updates the UI state accordingly
+     * Gets a single result from repository and updates the UI state
      */
     fun searchMoviesByActor(actorName: String) {
         viewModelScope.launch {
@@ -151,26 +157,19 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                 }
 
                 // Now perform the search using first() to get a single emission
-                repository.searchMoviesByActor(actorName)
-                    .catch { e ->
-                        _message.value = "Error searching movies: ${e.message}"
-                        Log.e(TAG, "Error searching for actor: ${e.message}")
-                        _isLoading.value = false
-                    }
-                    .collect { movies ->
-                        _actorSearchResults.value = movies
-                        Log.d(TAG, "Found ${movies.size} movies with actor: $actorName")
+                val movies = repository.searchMoviesByActor(actorName).first()
+                _actorSearchResults.value = movies
+                Log.d(TAG, "Found ${movies.size} movies with actor: $actorName")
 
-                        if (movies.isEmpty()) {
-                            _message.value = "No movies found with actor: $actorName"
-                        } else {
-                            _message.value = null // Clear error message if movies found
-                        }
-                        _isLoading.value = false
-                    }
+                if (movies.isEmpty()) {
+                    _message.value = "No movies found with actor: $actorName"
+                } else {
+                    _message.value = null // Clear error message if movies found
+                }
             } catch (e: Exception) {
                 _message.value = "Error searching movies: ${e.message}"
                 Log.e(TAG, "Exception in searchMoviesByActor: ${e.message}")
+            } finally {
                 _isLoading.value = false
             }
         }
@@ -252,5 +251,21 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
      */
     fun clearTitleSearchResults() {
         _titleSearchResults.value = emptyList()
+    }
+
+    /**
+     * Get all movies from database for verification
+     */
+    fun getAllMoviesFromDb() {
+        viewModelScope.launch {
+            try {
+                val count = repository.getMoviesCount()
+                _message.value = "Database contains $count movies"
+                Log.d(TAG, "Database verification: $count movies found")
+            } catch (e: Exception) {
+                _message.value = "Error checking database: ${e.message}"
+                Log.e(TAG, "Error checking database: ${e.message}")
+            }
+        }
     }
 }

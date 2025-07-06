@@ -148,35 +148,51 @@ class MovieRepository(private val context: Context) {
     suspend fun saveMovieToDb(movie: MovieResponse) {
         withContext(Dispatchers.IO) {
             try {
-                Log.d(TAG, "Saving movie to database: ${movie.title}")
+                Log.d(TAG, "Saving movie to database: ${movie.title} with IMDb ID: ${movie.imdbID}")
+
+                // Validate required fields
+                if (movie.imdbID.isBlank()) {
+                    throw IllegalArgumentException("Movie IMDb ID cannot be blank")
+                }
+                if (movie.title.isBlank()) {
+                    throw IllegalArgumentException("Movie title cannot be blank")
+                }
 
                 // Convert API response to database entity
                 val movieEntity = Movie(
                     imdbID = movie.imdbID,
                     title = movie.title,
-                    year = movie.year,
-                    rated = movie.rated,
-                    released = movie.released,
-                    runtime = movie.runtime,
-                    genre = movie.genre,
-                    director = movie.director,
-                    writer = movie.writer,
-                    actors = movie.actors,
-                    plot = movie.plot,
-                    language = movie.language,
-                    country = movie.country,
-                    awards = movie.awards,
-                    poster = movie.poster,
-                    imdbRating = movie.imdbRating,
-                    imdbVotes = movie.imdbVotes,
-                    type = movie.type
+                    year = movie.year.ifBlank { "Unknown" },
+                    rated = movie.rated.ifBlank { "Not Rated" },
+                    released = movie.released.ifBlank { "Unknown" },
+                    runtime = movie.runtime.ifBlank { "Unknown" },
+                    genre = movie.genre.ifBlank { "Unknown" },
+                    director = movie.director.ifBlank { "Unknown" },
+                    writer = movie.writer.ifBlank { "Unknown" },
+                    actors = movie.actors.ifBlank { "Unknown" },
+                    plot = movie.plot.ifBlank { "No plot available" },
+                    language = movie.language.ifBlank { "Unknown" },
+                    country = movie.country.ifBlank { "Unknown" },
+                    awards = movie.awards.ifBlank { "N/A" },
+                    poster = movie.poster.ifBlank { "" },
+                    imdbRating = movie.imdbRating.ifBlank { "N/A" },
+                    imdbVotes = movie.imdbVotes.ifBlank { "N/A" },
+                    type = movie.type.ifBlank { "movie" }
                 )
+
+                Log.d(TAG, "Movie entity created successfully, inserting into database...")
 
                 // Insert into database
                 movieDao.insertMovie(movieEntity)
-                Log.d(TAG, "Successfully saved movie to database")
+                
+                // Verify the movie was saved
+                val count = movieDao.getMoviesCount()
+                Log.d(TAG, "Successfully saved movie to database. Total movies in DB: $count")
+            } catch (e: IllegalArgumentException) {
+                Log.e(TAG, "Invalid movie data: ${e.message}")
+                throw e
             } catch (e: Exception) {
-                Log.e(TAG, "Error saving movie to DB: ${e.message}")
+                Log.e(TAG, "Error saving movie to DB: ${e.message}", e)
                 throw e
             }
         }
