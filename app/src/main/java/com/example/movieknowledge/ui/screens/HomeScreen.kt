@@ -20,8 +20,7 @@ fun HomeScreen(
     onSearchMoviesClick: () -> Unit,
     onSearchActorsClick: () -> Unit,
     onSearchByTitleClick: () -> Unit,
-    onFilterMoviesClick: () -> Unit,
-    onViewSavedMoviesClick: () -> Unit
+    onFilterMoviesClick: () -> Unit
 ) {
     val isLoading by viewModel.isLoading.collectAsState()
     val message by viewModel.message.collectAsState()
@@ -78,23 +77,13 @@ fun HomeScreen(
             }
         }
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        Button(
+            onClick = onFilterMoviesClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp)
         ) {
-            Button(
-                onClick = onFilterMoviesClick,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = stringResource(R.string.filter_movies))
-            }
-
-            Button(
-                onClick = onViewSavedMoviesClick,
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(text = "View Saved Movies")
-            }
+            Text(text = stringResource(R.string.filter_movies))
         }
 
         // Loading indicator

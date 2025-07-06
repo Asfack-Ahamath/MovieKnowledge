@@ -51,12 +51,14 @@ fun MovieNavigation(navController: NavHostController, viewModel: MovieViewModel)
         composable("home") {
             HomeScreen(
                 viewModel = viewModel,
-                onAddMoviesClick = { viewModel.addMoviesToDb() },
+                onAddMoviesClick = { 
+                    viewModel.addMoviesToDb()
+                    navController.navigate("saved_movies")
+                },
                 onSearchMoviesClick = { navController.navigate("search_movies") },
                 onSearchActorsClick = { navController.navigate("search_actors") },
                 onSearchByTitleClick = { navController.navigate("search_by_title") },
-                onFilterMoviesClick = { navController.navigate("filter_movies") },
-                onViewSavedMoviesClick = { navController.navigate("saved_movies") }
+                onFilterMoviesClick = { navController.navigate("filter_movies") }
             )
         }
         composable("search_movies") {

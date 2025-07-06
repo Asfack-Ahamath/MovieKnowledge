@@ -70,10 +70,10 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val count = repository.getMoviesCount()
                 if (count > 0) {
-                    _message.value = "Movies already in database (${count} movies). Click 'View Saved Movies' to see them."
+                    _message.value = "Movies already in database (${count} movies)"
                 } else {
                     repository.addMoviesToDb()
-                    _message.value = "Movies added to database successfully! Click 'View Saved Movies' to see them."
+                    _message.value = "Movies added to database successfully!"
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Error adding movies: ${e.message}")
