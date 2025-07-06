@@ -62,7 +62,7 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Add predefined movies to database and display all saved movies
+     * Add predefined movies to database
      */
     fun addMoviesToDb() {
         viewModelScope.launch {
@@ -70,14 +70,11 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val count = repository.getMoviesCount()
                 if (count > 0) {
-                    _message.value = "Movies already in database (${count} movies)"
+                    _message.value = "Movies already in database (${count} movies). Click 'View Saved Movies' to see them."
                 } else {
                     repository.addMoviesToDb()
-                    _message.value = "Movies added to database successfully"
+                    _message.value = "Movies added to database successfully! Click 'View Saved Movies' to see them."
                 }
-                
-                // Load and display all saved movies
-                loadAllSavedMovies()
             } catch (e: Exception) {
                 Log.e(TAG, "Error adding movies: ${e.message}")
                 _message.value = "Error adding movies: ${e.message}"
@@ -127,9 +124,6 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                     repository.saveMovieToDb(movie)
                     _message.value = "Movie '${movie.title}' saved to database successfully!"
                     Log.d(TAG, "Successfully saved movie to database: ${movie.title}")
-                    
-                    // Refresh the saved movies display
-                    loadAllSavedMovies()
                 } ?: run {
                     _message.value = "No movie to save. Please search for a movie first."
                     Log.w(TAG, "Attempted to save movie but no movie is currently loaded")

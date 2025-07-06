@@ -1,9 +1,6 @@
 package com.example.movieknowledge.ui.screens
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -11,12 +8,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.movieknowledge.R
-import com.example.movieknowledge.data.local.entities.Movie
 import com.example.movieknowledge.viewmodel.MovieViewModel
 
 @Composable
@@ -26,12 +20,11 @@ fun HomeScreen(
     onSearchMoviesClick: () -> Unit,
     onSearchActorsClick: () -> Unit,
     onSearchByTitleClick: () -> Unit,
-    onFilterMoviesClick: () -> Unit
+    onFilterMoviesClick: () -> Unit,
+    onViewSavedMoviesClick: () -> Unit
 ) {
-    val allSavedMovies by viewModel.allSavedMovies.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val message by viewModel.message.collectAsState()
-    val listState = rememberLazyListState()
 
     Column(
         modifier = Modifier
@@ -85,13 +78,23 @@ fun HomeScreen(
             }
         }
 
-        Button(
-            onClick = onFilterMoviesClick,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 8.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Text(text = stringResource(R.string.filter_movies))
+            Button(
+                onClick = onFilterMoviesClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = stringResource(R.string.filter_movies))
+            }
+
+            Button(
+                onClick = onViewSavedMoviesClick,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = "View Saved Movies")
+            }
         }
 
         // Loading indicator
@@ -140,25 +143,8 @@ fun HomeScreen(
             }
         }
 
-        // Saved movies display
-        if (allSavedMovies.isNotEmpty()) {
-            Text(
-                text = "Saved Movies Database (${allSavedMovies.size} movies)",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(vertical = 16.dp)
-            )
-
-            LazyColumn(
-                state = listState,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                items(allSavedMovies) { movie ->
-                    SavedMovieCard(movie = movie)
-                }
-            }
-        } else if (!isLoading && message == null) {
-            // Empty state when no movies are displayed
+        // Welcome message and instructions
+        if (!isLoading && message == null) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -166,131 +152,23 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(32.dp)
                 ) {
                     Text(
-                        text = "No movies in database yet",
-                        style = MaterialTheme.typography.bodyLarge,
+                        text = "Welcome to Movie Knowledge!",
+                        style = MaterialTheme.typography.headlineSmall,
                         textAlign = TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "Click 'Add Movies to DB' to populate with sample movies",
+                        text = "• Add sample movies to get started\n• Search for movies online\n• Search actors in your database\n• View all your saved movies",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SavedMovieCard(movie: Movie) {
-    ElevatedCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-        ) {
-            // Title and IMDb ID
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = movie.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.weight(1f)
-                )
-                Surface(
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    shape = MaterialTheme.shapes.small
-                ) {
-                    Text(
-                        text = movie.imdbID,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Year, Runtime, and Rating
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = movie.year,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = movie.runtime,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "⭐ ${movie.imdbRating}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Genre
-            Surface(
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = MaterialTheme.shapes.small
-            ) {
-                Text(
-                    text = movie.genre,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                )
-            }
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Actors
-            Text(
-                text = "Actors: ${movie.actors}",
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Medium,
-                color = MaterialTheme.colorScheme.primary
-            )
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            // Director
-            Text(
-                text = "Director: ${movie.director}",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            
-            Spacer(modifier = Modifier.height(8.dp))
-            
-            // Plot
-            Text(
-                text = movie.plot,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
