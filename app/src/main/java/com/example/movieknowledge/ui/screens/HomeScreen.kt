@@ -69,7 +69,7 @@ fun HomeScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Movie,
+                        imageVector = Icons.Default.VideoLibrary,
                         contentDescription = "Movie Icon",
                         modifier = Modifier.size(48.dp),
                         tint = MaterialTheme.colorScheme.primary
@@ -142,7 +142,7 @@ fun HomeScreen(
             ) {
                 ActionButton(
                     onClick = onSearchByTitleClick,
-                    icon = Icons.Default.Title,
+                    icon = Icons.Default.Movie,
                     title = stringResource(R.string.search_by_title),
                     subtitle = "Search by movie title",
                     modifier = Modifier.weight(1f)
@@ -150,7 +150,7 @@ fun HomeScreen(
 
                 ActionButton(
                     onClick = onFilterMoviesClick,
-                    icon = Icons.Default.FilterList,
+                    icon = Icons.Default.Sort,
                     title = stringResource(R.string.filter_movies),
                     subtitle = "Filter and browse",
                     modifier = Modifier.weight(1f)
@@ -192,7 +192,7 @@ fun HomeScreen(
                         
                         Icon(
                             imageVector = when {
-                                isError -> Icons.Default.Error
+                                isError -> Icons.Default.Warning
                                 isSuccess -> Icons.Default.CheckCircle
                                 else -> Icons.Default.Info
                             },
@@ -234,7 +234,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Lightbulb,
+                            imageVector = Icons.Default.Info,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSecondaryContainer,
                             modifier = Modifier.size(24.dp)
@@ -343,7 +343,7 @@ fun ActionButton(
             }
             
             Icon(
-                imageVector = Icons.Default.ChevronRight,
+                imageVector = Icons.Default.ArrowForward,
                 contentDescription = "Go",
                 tint = if (isPrimary)
                     MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.5f)
