@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.movieknowledge.data.local.entities.Movie
+import com.example.movieknowledge.data.local.entities.Movie as MovieEntity
 import com.example.movieknowledge.viewmodel.MovieViewModel
 import kotlinx.coroutines.launch
 
@@ -192,7 +192,7 @@ fun SavedMoviesScreen(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SavedMovieCard(movie: Movie) {
+fun SavedMovieCard(movie: MovieEntity) {
     ElevatedCard(
         modifier = Modifier
             .fillMaxWidth()
