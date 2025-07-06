@@ -49,6 +49,7 @@ fun MovieNavigation(navController: NavHostController, viewModel: MovieViewModel)
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             HomeScreen(
+                viewModel = viewModel,
                 onAddMoviesClick = { viewModel.addMoviesToDb() },
                 onSearchMoviesClick = { navController.navigate("search_movies") },
                 onSearchActorsClick = { navController.navigate("search_actors") },

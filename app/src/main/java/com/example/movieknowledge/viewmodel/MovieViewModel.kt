@@ -32,6 +32,9 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     private val _titleSearchResults = MutableStateFlow<List<SearchResult>>(emptyList())
     val titleSearchResults = _titleSearchResults.asStateFlow()
 
+    private val _allSavedMovies = MutableStateFlow<List<Movie>>(emptyList())
+    val allSavedMovies = _allSavedMovies.asStateFlow()
+
     private val _isLoading = MutableStateFlow(false)
     val isLoading = _isLoading.asStateFlow()
 
@@ -59,7 +62,7 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     /**
-     * Add predefined movies to database
+     * Add predefined movies to database and display all saved movies
      */
     fun addMoviesToDb() {
         viewModelScope.launch {
@@ -72,6 +75,9 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                     repository.addMoviesToDb()
                     _message.value = "Movies added to database successfully"
                 }
+                
+                // Load and display all saved movies
+                loadAllSavedMovies()
             } catch (e: Exception) {
                 Log.e(TAG, "Error adding movies: ${e.message}")
                 _message.value = "Error adding movies: ${e.message}"
@@ -121,6 +127,9 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                     repository.saveMovieToDb(movie)
                     _message.value = "Movie '${movie.title}' saved to database successfully!"
                     Log.d(TAG, "Successfully saved movie to database: ${movie.title}")
+                    
+                    // Refresh the saved movies display
+                    loadAllSavedMovies()
                 } ?: run {
                     _message.value = "No movie to save. Please search for a movie first."
                     Log.w(TAG, "Attempted to save movie but no movie is currently loaded")
@@ -267,5 +276,28 @@ class MovieViewModel(application: Application) : AndroidViewModel(application) {
                 Log.e(TAG, "Error checking database: ${e.message}")
             }
         }
+    }
+
+    /**
+     * Load all saved movies from database
+     */
+    fun loadAllSavedMovies() {
+        viewModelScope.launch {
+            try {
+                val movies = repository.getAllMovies().first()
+                _allSavedMovies.value = movies
+                Log.d(TAG, "Loaded ${movies.size} movies from database")
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading saved movies: ${e.message}")
+                _message.value = "Error loading saved movies: ${e.message}"
+            }
+        }
+    }
+
+    /**
+     * Clear all saved movies display
+     */
+    fun clearAllSavedMovies() {
+        _allSavedMovies.value = emptyList()
     }
 }
