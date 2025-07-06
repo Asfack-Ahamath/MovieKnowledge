@@ -17,6 +17,7 @@ import com.example.movieknowledge.ui.screens.SearchActorsScreen
 import com.example.movieknowledge.ui.screens.SearchByTitleScreen
 import com.example.movieknowledge.ui.screens.SearchMoviesScreen
 import com.example.movieknowledge.ui.screens.FilterMoviesScreen
+import com.example.movieknowledge.ui.screens.SavedMoviesScreen
 import com.example.movieknowledge.ui.theme.MovieKnowledgeAppTheme
 import com.example.movieknowledge.viewmodel.MovieViewModel
 
@@ -49,7 +50,13 @@ fun MovieNavigation(navController: NavHostController, viewModel: MovieViewModel)
     NavHost(navController = navController, startDestination = "home") {
         composable("home") {
             HomeScreen(
-                onAddMoviesClick = { viewModel.addMoviesToDb() },
+                onAddMoviesClick = { 
+                    viewModel.addMoviesToDb { success ->
+                        if (success) {
+                            navController.navigate("saved_movies")
+                        }
+                    }
+                },
                 onSearchMoviesClick = { navController.navigate("search_movies") },
                 onSearchActorsClick = { navController.navigate("search_actors") },
                 onSearchByTitleClick = { navController.navigate("search_by_title") },
@@ -76,6 +83,12 @@ fun MovieNavigation(navController: NavHostController, viewModel: MovieViewModel)
         }
         composable("filter_movies") {
             FilterMoviesScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+        composable("saved_movies") {
+            SavedMoviesScreen(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() }
             )
